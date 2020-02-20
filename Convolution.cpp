@@ -59,9 +59,9 @@ namespace ESS
 
 		Spectrum Output{ std::vector<float>(SpectrumLength), std::vector<float>(SpectrumLength) };
 
-		MultiplySpectrums(	ToSpectrum(FirstInput, ZeroPaddedLength),
-							ToSpectrum(SecondInput, ZeroPaddedLength),
-							Output);
+		MultiplySpectrums(ToSpectrum(FirstInput, ZeroPaddedLength),
+						  ToSpectrum(SecondInput, ZeroPaddedLength),
+						  Output);
 
 		ToWaveform(OutputSignal, Output);
 	}
