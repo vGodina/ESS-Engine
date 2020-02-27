@@ -2,6 +2,7 @@
 An implementation of the impulse response measurement technique proposed by Prof. A.Farina.
 The technique is based on exciting DUT (device under test) with exponential sine sweep (ESS) and deriving impulse response from the response by cross-correlation and some amplitude modulation.
 
+![](images/ESS.png)
 Detailed description can be found here:
 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.33.1614&rep=rep1&type=pdf
 http://pcfarina.eng.unipr.it/Public/Papers/226-AES122.pdf

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ESS
+namespace AudioFiles
 {
 	using Signal = std::vector<float>;
 

@@ -7,7 +7,13 @@ namespace ESS
 
 class EssEngine {
 public:
-	void SetSignalParameters(int InSampleRate, int InOctavesCount, int InLengthCoefficient);
+	int EstimateLengthCoeff(double LengthInSec);
+	int EstimateOctaveCount(double LowerFrequency); //Upper frequency is half SampleRate
+
+	void SetSampleRate(int InSampleRate);
+	void SetSignalParameters(int InOctavesCount, int InLengthCoefficient);
+
+	void SetKirkebyFilter();
 
 	void GenerateReferenceSignal();
 	void ImportProcessedSignal(const Signal& InProcessedSignal);
@@ -21,7 +27,6 @@ public:
 
 private:
 	Signal GenerateInverseSignal(const Signal& RefSignal);
-	void FadeReferenceSignal(double WidthInOctaves);
 	void TrimProcessedSignalToRef();
 
 	int SampleRate;

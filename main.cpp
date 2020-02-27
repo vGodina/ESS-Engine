@@ -12,11 +12,12 @@ int main()
 	//ESS signal parameters
 	const int SampleRate = 48000;
 	const int BitDepth = 24;
-	const int OctavesCount = 11;
-	const int LengthParam = 61;
+	const double LowerFrequency = 23;
+
+	const double SignalDurationInSec = 12;
 	const double Attenuate = 0.9995;
 	// IR parameters
-	const int HarmonicsCount = 20;
+	const int HarmonicsCount = 1;
 	const double IRLength = 1.0;
 	const double PreFrame = 0.03;
 	const double HarmonicsLength = 0.1;
@@ -28,20 +29,23 @@ int main()
 	const std::string ProcessedSignalPath = FolderPath + "Processed.wav";
 
 	ESS::EssEngine Engine;
-	Engine.SetSignalParameters(SampleRate, OctavesCount, LengthParam);
+	Engine.SetSampleRate(SampleRate);
+	const int OctavesCount = Engine.EstimateOctaveCount(LowerFrequency);
+	const int LengthParam = Engine.EstimateLengthCoeff(SignalDurationInSec);
+	Engine.SetSignalParameters(OctavesCount, LengthParam);
 	Engine.GenerateReferenceSignal();
-	Engine.ImportProcessedSignal(ESS::ImportFromFile(ProcessedSignalPath));
+	AudioFiles::SaveToFile(RefSignalPath, Engine.GetReferenceSignal(), BitDepth, SampleRate, Attenuate);
+	Engine.ImportProcessedSignal(AudioFiles::ImportFromFile(ProcessedSignalPath));
 	Engine.CalculateRawIR();
 	Engine.SeparateIRs(HarmonicsCount, IRLength, HarmonicsLength, PreFrame);
 
-	ESS::SaveToFile(RefSignalPath, Engine.GetReferenceSignal(), BitDepth, SampleRate, Attenuate);
-	ESS::SaveToFile(IRSignalPath, Engine.GetRawIR(), BitDepth, SampleRate, Attenuate);
+	AudioFiles::SaveToFile(IRSignalPath, Engine.GetRawIR(), BitDepth, SampleRate, Attenuate);
 
 	int i = 0;
 	for (const auto& IR : Engine.GetIRArray())
 	{
 		++i;
-		ESS::SaveToFile(IRPath + std::to_string(i) + ".wav", IR, BitDepth, SampleRate, Attenuate);
+		AudioFiles::SaveToFile(IRPath + std::to_string(i) + ".wav", IR, BitDepth, SampleRate, Attenuate);
 	}
 
 	return 0;

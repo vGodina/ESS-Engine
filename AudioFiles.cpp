@@ -3,7 +3,7 @@
 #include "audiofile.h"
 #include "AudioFiles.h"
 
-namespace ESS
+namespace AudioFiles
 {
 	void Attenuate(Signal& SourceSignal, const double Attenuator)
 	{

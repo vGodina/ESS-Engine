@@ -5,14 +5,83 @@
 
 namespace ESS
 {
-	void EssEngine::SetSignalParameters(const int InSampleRate, const int InOctavesCount, const int InLengthCoefficient)
+	double RMS(const Signal& SourceSignal)
+	{
+		double Sum{ 0.0 };
+		for (auto Sample : SourceSignal) {
+			Sum += Sample * Sample;
+		}
+		return sqrt(Sum / SourceSignal.size());
+	}
+
+	Signal GetEnvelope(const Signal& SourceSignal, double WindowInSeconds, int SampleRate)
+	{
+		int WindowInSamples = WindowInSeconds * SampleRate;
+		auto Begin = SourceSignal.begin();
+		Signal Envelope;
+		Envelope.resize(SourceSignal.size() / WindowInSamples);
+
+		for (int i = 0; i < Envelope.size(); ++i)
+		{
+			Envelope[i] = RMS(Signal{ Begin, Begin + WindowInSamples });
+			Begin += WindowInSamples;
+		}
+		return Envelope;
+	}
+
+	ptrdiff_t FindIndexAbsMax(const Signal& SourceSignal)
+	{
+		const auto MinMax = std::minmax_element(SourceSignal.begin(), SourceSignal.end());
+		return (*MinMax.second > abs(*MinMax.first)) ?
+			MinMax.second - SourceSignal.begin() : MinMax.first - SourceSignal.begin();
+	}
+
+	std::vector<int> FindIRPeakIndexes(const Signal& SourceSignal, int HarmonicsCount, const int OctaveLength)
+	{
+		int MainIndex = FindIndexAbsMax(SourceSignal);
+		std::vector<int> Peaks;
+		for (int i = 0; i < HarmonicsCount; ++i) {
+			Peaks.emplace_back(MainIndex - log2(i + 1) * OctaveLength);
+		}
+		return Peaks;
+	}
+
+	double FindNoiseFloor(const Signal& SourceSignal) { return 0.0; }
+
+	Signal FindImpulseAroundPeakIndex(const Signal& SourceSignal, const int PeakIndex, const double PreFrame, const double Length, const int SampleRate)
+	{
+		//naive implementation
+		Signal Result;
+		ptrdiff_t LeftPause = PreFrame * SampleRate;
+		ptrdiff_t ImpulseLength = Length * SampleRate;
+		auto Begin = SourceSignal.begin() + PeakIndex - LeftPause;
+		auto End = SourceSignal.begin() + PeakIndex + ImpulseLength;
+
+		return Signal(Begin, End);
+	}
+
+	int EssEngine::EstimateLengthCoeff(double LengthInSec)
+	{
+		return 0;
+	}
+
+	int EssEngine::EstimateOctaveCount(double LowerFrequency)
+	{
+		return round(log2(0.5 * SampleRate / LowerFrequency));
+	}
+
+	void EssEngine::SetSampleRate(const int InSampleRate)
 	{
 		SampleRate = InSampleRate;
+	}
+
+	void EssEngine::SetSignalParameters(const int InOctavesCount, const int InLengthCoefficient)
+	{
 		OctavesCount = InOctavesCount;
 		LengthCoefficient = InLengthCoefficient;
 	}
 
-	void EssEngine::FadeReferenceSignal(const double WidthInOctaves)
+	void EssEngine::SetKirkebyFilter()
 	{
 
 	}
@@ -50,64 +119,6 @@ namespace ESS
 		Convolution(ProcessedSignal, GenerateInverseSignal(ReferenceSignal), RawIR);
 	}
 
-	
-
-	double RMS(const Signal& SourceSignal)
-	{
-		double Sum{ 0.0 };
-		for ( auto Sample : SourceSignal) {
-			Sum += Sample * Sample;
-		}
-		return sqrt(Sum / SourceSignal.size());
-	}
-
-	Signal GetEnvelope(const Signal& SourceSignal, double WindowInSeconds, int SampleRate)
-	{
-		//maybe rewrite for each sample, not just frame
-		int WindowInSamples = WindowInSeconds * SampleRate;
-		auto Begin = SourceSignal.begin();
-		Signal Envelope;
-		Envelope.resize(SourceSignal.size() / WindowInSamples);
-
-		for (int i = 0; i < Envelope.size(); ++i)
-		{
-			Envelope[i] = RMS(Signal{Begin, Begin + WindowInSamples });
-			Begin += WindowInSamples;
-		}
-		return Envelope;
-	}
-
-	ptrdiff_t FindIndexAbsMax(const Signal& SourceSignal)
-	{
-		const auto MinMax = std::minmax_element(SourceSignal.begin(), SourceSignal.end());
-		return (*MinMax.second > abs(*MinMax.first)) ?
-			MinMax.second - SourceSignal.begin() : MinMax.first - SourceSignal.begin();
-	}
-
-	std::vector<int> FindIRPeakIndexes(const Signal& SourceSignal, int HarmonicsCount, const int OctaveLength)
-	{
-		int MainIndex = FindIndexAbsMax(SourceSignal);
-		std::vector<int> Peaks;
-		for (int i = 0; i < HarmonicsCount; ++i) {
-			Peaks.emplace_back(MainIndex - log2(i+1) * OctaveLength);
-		}
-		return Peaks;
-	}
-
-	double FindNoiseFloor(const Signal& SourceSignal) { return 0.0; }
-
-	Signal FindImpulseAroundPeakIndex(const Signal& SourceSignal, const int PeakIndex, const double PreFrame, const double Length, const int SampleRate)
-	{
-		//naive implementation
-		Signal Result;
-		ptrdiff_t LeftPause = PreFrame * SampleRate;
-		ptrdiff_t ImpulseLength = Length * SampleRate;
-		auto Begin = SourceSignal.begin() + PeakIndex - LeftPause;
-		auto End = SourceSignal.begin() + PeakIndex + ImpulseLength;
-
-		return Signal(Begin, End);
-	}
-
 	void EssEngine::SeparateIRs(const int HarmonicsCount, const double IRMaxLength, const double HarmonicLength, const double PreFrame)
 	{
 		auto OctaveLength = ReferenceSignal.size() / OctavesCount;
@@ -126,7 +137,7 @@ namespace ESS
 
 	void EssEngine::TrimProcessedSignalToRef()
 	{
-		
+		// cross-corelate, find delay, cut begin if possible, cut end by known length
 	}
 
 	Signal EssEngine::GetReferenceSignal() const
