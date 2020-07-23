@@ -17,8 +17,8 @@ int main()
 	const double SignalDurationInSec = 12;
 	const double Attenuate = 0.9995;
 	// IR parameters
-	const int HarmonicsCount = 1;
-	const double IRLength = 1.0;
+	const int HarmonicsCount = 5;
+	const double IRLength = 1.5;
 	const double PreFrame = 0.03;
 	const double HarmonicsLength = 0.1;
 	// file path parameters
@@ -30,11 +30,12 @@ int main()
 
 	ESS::EssEngine Engine;
 	Engine.SetSampleRate(SampleRate);
-	const int OctavesCount = Engine.EstimateOctaveCount(LowerFrequency);
-	const int LengthParam = Engine.EstimateLengthCoeff(SignalDurationInSec);
-	Engine.SetSignalParameters(OctavesCount, LengthParam);
+	const int OctavesCount = 11;// Engine.EstimateOctaveCount(LowerFrequency);
+	const int LengthCoefficient = 23;// Engine.EstimateLengthCoeff(SignalDurationInSec);
+	Engine.SetOctavesCount(OctavesCount);
+	Engine.SetLengthCoefficient(LengthCoefficient);
 	Engine.GenerateReferenceSignal();
-	AudioFiles::SaveToFile(RefSignalPath, Engine.GetReferenceSignal(), BitDepth, SampleRate, Attenuate);
+	//AudioFiles::SaveToFile(RefSignalPath, Engine.GetReferenceSignal(), BitDepth, SampleRate, Attenuate);
 	Engine.ImportProcessedSignal(AudioFiles::ImportFromFile(ProcessedSignalPath));
 	Engine.CalculateRawIR();
 	Engine.SeparateIRs(HarmonicsCount, IRLength, HarmonicsLength, PreFrame);

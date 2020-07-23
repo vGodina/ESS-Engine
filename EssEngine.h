@@ -11,7 +11,8 @@ public:
 	int EstimateOctaveCount(double LowerFrequency); //Upper frequency is half SampleRate
 
 	void SetSampleRate(int InSampleRate);
-	void SetSignalParameters(int InOctavesCount, int InLengthCoefficient);
+	void SetOctavesCount(int InOctavesCount);
+	void SetLengthCoefficient(int InLengthCoefficient);
 
 	void SetKirkebyFilter();
 

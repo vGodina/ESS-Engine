@@ -16,14 +16,14 @@ namespace ESS
 
 	Signal GetEnvelope(const Signal& SourceSignal, double WindowInSeconds, int SampleRate)
 	{
-		int WindowInSamples = WindowInSeconds * SampleRate;
+		int WindowInSamples = static_cast<int>(WindowInSeconds * SampleRate);
 		auto Begin = SourceSignal.begin();
 		Signal Envelope;
 		Envelope.resize(SourceSignal.size() / WindowInSamples);
 
-		for (int i = 0; i < Envelope.size(); ++i)
+		for (size_t i = 0; i < Envelope.size(); ++i)
 		{
-			Envelope[i] = RMS(Signal{ Begin, Begin + WindowInSamples });
+			Envelope[i] = static_cast<float>(RMS(Signal{ Begin, Begin + WindowInSamples }));
 			Begin += WindowInSamples;
 		}
 		return Envelope;
@@ -40,8 +40,8 @@ namespace ESS
 	{
 		int MainIndex = FindIndexAbsMax(SourceSignal);
 		std::vector<int> Peaks;
-		for (int i = 0; i < HarmonicsCount; ++i) {
-			Peaks.emplace_back(MainIndex - log2(i + 1) * OctaveLength);
+		for (auto i = 0; i < HarmonicsCount; ++i) {
+			Peaks.emplace_back(MainIndex - static_cast<int>(log2(i + 1) * OctaveLength));
 		}
 		return Peaks;
 	}
@@ -52,8 +52,8 @@ namespace ESS
 	{
 		//naive implementation
 		Signal Result;
-		ptrdiff_t LeftPause = PreFrame * SampleRate;
-		ptrdiff_t ImpulseLength = Length * SampleRate;
+		ptrdiff_t LeftPause = static_cast<int>(PreFrame) * SampleRate;
+		ptrdiff_t ImpulseLength = static_cast<int>(Length) * SampleRate;
 		auto Begin = SourceSignal.begin() + PeakIndex - LeftPause;
 		auto End = SourceSignal.begin() + PeakIndex + ImpulseLength;
 
@@ -67,7 +67,7 @@ namespace ESS
 
 	int EssEngine::EstimateOctaveCount(double LowerFrequency)
 	{
-		return round(log2(0.5 * SampleRate / LowerFrequency));
+		return static_cast<int>(round(log2(0.5 * SampleRate / LowerFrequency)));
 	}
 
 	void EssEngine::SetSampleRate(const int InSampleRate)
@@ -75,9 +75,13 @@ namespace ESS
 		SampleRate = InSampleRate;
 	}
 
-	void EssEngine::SetSignalParameters(const int InOctavesCount, const int InLengthCoefficient)
+	void EssEngine::SetOctavesCount(const int InOctavesCount)
 	{
 		OctavesCount = InOctavesCount;
+	}
+
+	void EssEngine::SetLengthCoefficient(const int InLengthCoefficient)
+	{
 		LengthCoefficient = InLengthCoefficient;
 	}
 
@@ -94,9 +98,9 @@ namespace ESS
 
 		constexpr double PI = 3.141592653589793116;
 
-		for (int i = 0; i < RoundedSignalLength; ++i)
+		for (auto i = 0; i < RoundedSignalLength; ++i)
 		{
-			ReferenceSignal[i] = sin(2.0 * PI * LengthCoefficient * pow(2.0, OctavesCount * i / static_cast<double>(RoundedSignalLength)));
+			ReferenceSignal[i] = static_cast<float>(sin(2.0 * PI * LengthCoefficient * pow(2.0, OctavesCount * i / static_cast<double>(RoundedSignalLength))));
 		}
 	}
 
@@ -106,9 +110,9 @@ namespace ESS
 		std::reverse(InverseSignal.begin(), InverseSignal.end());
 		double EnergyCoeff = OctavesCount * log(2.0) / (1.0 - pow(2.0, -OctavesCount));
 		double PowCoeff = -OctavesCount / static_cast<double>(InverseSignal.size());
-		for (int i = 0; i < InverseSignal.size(); ++i)
+		for (size_t i = 0; i < InverseSignal.size(); ++i)
 		{
-			InverseSignal[i] *= EnergyCoeff * pow(2.0, PowCoeff * i);
+			InverseSignal[i] *= static_cast<float>(EnergyCoeff * pow(2.0, PowCoeff * i));
 		}
 
 		return InverseSignal;
@@ -124,7 +128,7 @@ namespace ESS
 		auto OctaveLength = ReferenceSignal.size() / OctavesCount;
 		auto PeaksArray = FindIRPeakIndexes(RawIR, HarmonicsCount, OctaveLength);
 		IRVector.emplace_back(FindImpulseAroundPeakIndex(RawIR, PeaksArray[0], PreFrame *50, IRMaxLength, SampleRate));
-		for (int i = 1; i < PeaksArray.size(); ++i)
+		for (size_t i = 1; i < PeaksArray.size(); ++i)
 		{
 			IRVector.emplace_back(FindImpulseAroundPeakIndex(RawIR, PeaksArray[i], PreFrame, HarmonicLength, SampleRate));
 		}
